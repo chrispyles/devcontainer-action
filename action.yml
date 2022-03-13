@@ -1,0 +1,51 @@
+name: 'Sync devcontainer'
+description: "Update a repo's .devcontainer directory with files from another repo"
+
+inputs:
+  repo:
+    description: 'The devcontainer repo in the format "<OWNER>/<REPO>"'
+    required: true
+  path:
+    description: 'The path to the directory of devcontainer files in the repo'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set git configurations
+      run: |
+        git config --global user.name "github-actions"
+        git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      shell: bash
+
+    - name: Create temporary directory
+      id: create-temp-dir
+      run: |
+        echo "::set-output name=temp-dir::$(mktemp -d)"
+      shell: bash
+    
+    - name: Clone devcontainer repo
+      run: |
+        git clone https://github.com/${{ inputs.repo }} ${{ steps.create-temp-dir.outputs.temp-dir }}
+      shell: bash
+
+    - name: Copy devcontainer files
+      id: clone
+      run: |
+        if [ -d ".devcontainer" ]
+        then 
+          echo "Deleting .devcontainer"
+          rm -r .devcontainer
+        fi
+        cp -r ${{ steps.create-temp-dir.outputs.temp-dir }}/${{ inputs.path }} .devcontainer
+        echo "::set-output name=sha::$(cd .devcontainer && git rev-parse HEAD)"
+        rm -rf .devcontainer/.git
+      shell: bash
+
+    - name: Commit changes
+      run: |
+        git add .devcontainer
+        git commit -m "update devcontainer to ${{ inputs.repo }}@${{ steps.clone.outputs.sha }}" || :
+        git push
+      shell: bash
