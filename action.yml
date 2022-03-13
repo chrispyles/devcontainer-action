@@ -46,6 +46,6 @@ runs:
     - name: Commit changes
       run: |
         git add .devcontainer
-        git commit -m "update devcontainer to ${{ inputs.repo }}@${{ steps.clone.outputs.sha }}" || :
+        git commit -m "update .devcontainer to ${{ inputs.repo }}@${{ steps.clone.outputs.sha }}" || :
         git push
       shell: bash
